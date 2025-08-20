@@ -40,7 +40,7 @@ dependencies = [
 ]
 [project.optional-dependencies]
 elasticsearch = [
-  "elasticsearch>=7",  # trigger
+  "elasticsearch>=7",
 ]
 testing = [
   "coverage",
