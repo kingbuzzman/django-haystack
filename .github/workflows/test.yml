@@ -43,6 +43,8 @@ jobs:
         image: elasticsearch:8.19.2
         env:
           discovery.type: "single-node"
+          xpack.security.enabled: "false"
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
         options: >-
           --health-cmd "curl http://localhost:9200/_cluster/health"
           --health-interval 10s
@@ -52,6 +54,8 @@ jobs:
         image: elasticsearch:9.1.2
         env:
           discovery.type: "single-node"
+          xpack.security.enabled: "false"
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
         options: >-
           --health-cmd "curl http://localhost:9200/_cluster/health"
           --health-interval 10s
