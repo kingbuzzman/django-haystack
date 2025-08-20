@@ -92,20 +92,13 @@ HAYSTACK_CONNECTIONS = {
 }
 
 if "elasticsearch" in HAYSTACK_CONNECTIONS:
-    try:
-        import elasticsearch
+    from haystack.compat import HAS_ES7
 
-        if (5,) <= elasticsearch.__version__ <= (6,):
-            HAYSTACK_CONNECTIONS["elasticsearch"].update(
-                {
-                    "ENGINE": "haystack.backends.elasticsearch5_backend.Elasticsearch5SearchEngine"
-                }
-            )
-        elif (7,) <= elasticsearch.__version__ <= (8,):
-            HAYSTACK_CONNECTIONS["elasticsearch"].update(
-                {
-                    "ENGINE": "haystack.backends.elasticsearch7_backend.Elasticsearch7SearchEngine"
-                }
-            )
-    except ImportError:
+    if HAS_ES7
+        HAYSTACK_CONNECTIONS["elasticsearch"].update(
+            {
+                "ENGINE": "haystack.backends.elasticsearch7_backend.Elasticsearch7SearchEngine"
+            }
+        )
+    else:
         del HAYSTACK_CONNECTIONS["elasticsearch"]

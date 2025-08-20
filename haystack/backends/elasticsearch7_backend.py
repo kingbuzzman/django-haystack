@@ -12,11 +12,12 @@ from haystack.backends.elasticsearch_backend import (
 from haystack.constants import DEFAULT_OPERATOR, DJANGO_CT, DJANGO_ID, FUZZINESS
 from haystack.exceptions import MissingDependency
 from haystack.utils import get_identifier, get_model_ct
+from haystack.compat import HAS_ES7
 
 try:
     import elasticsearch
 
-    if not ((7, 0, 0) <= elasticsearch.__version__ < (8, 0, 0)):
+    if not HAS_ES7:
         raise ImportError
     from elasticsearch.helpers import bulk, scan
 except ImportError:
