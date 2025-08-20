@@ -90,4 +90,4 @@ jobs:
       - name: Run test
         run: tox -v
         env:
-          TOXENV: ${{ steps.format-tox.outputs.out }}
+          TOXENV: ${{ steps.format-tox.outputs.out }}-es{7,8,9}
