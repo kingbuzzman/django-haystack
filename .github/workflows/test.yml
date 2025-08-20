@@ -85,7 +85,7 @@ jobs:
         run: |
           clean_dj_version=$(echo "${{ matrix.django-version }}" | tr -cd '[:alnum:]')
           clean_py_version=$(echo "${{ matrix.python-version }}" | tr -cd '[:alnum:]')
-          name="py${clean_py_version}-dj${clean_dj_version}
+          name="py${clean_py_version}-dj${clean_dj_version}"
           echo "out=${name}" >> $GITHUB_OUTPUT
       - name: Run test
         run: tox -v
