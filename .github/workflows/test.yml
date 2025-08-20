@@ -22,7 +22,6 @@ jobs:
       matrix: # https://docs.djangoproject.com/en/stable/faq/install/#what-python-version-can-i-use-with-django
         django-version: ["4.2", "5.1", "5.2"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        elastic-version: ["7.17.12", "8.19.2", "9.1.2"]
         exclude:
           - django-version: "4.2"
             python-version: "3.13"
@@ -31,8 +30,30 @@ jobs:
           - django-version: "5.2"
             python-version: "3.9"
     services:
-      elastic:
-        image: elasticsearch:${{ matrix.elastic-version }}
+      elastic7:
+        image: elasticsearch:7
+        env:
+          discovery.type: "single-node"
+        options: >-
+          --health-cmd "curl http://localhost:9200/_cluster/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 9200:9200
+      elastic8:
+        image: elasticsearch:8
+        env:
+          discovery.type: "single-node"
+        options: >-
+          --health-cmd "curl http://localhost:9200/_cluster/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 9200:9200
+      elastic9:
+        image: elasticsearch:9
         env:
           discovery.type: "single-node"
         options: >-
@@ -64,10 +85,9 @@ jobs:
       - name: Format TOXENV
         id: format-tox
         run: |
-          es_version=${{ matrix.elastic-version }}
           clean_dj_version=$(echo "${{ matrix.django-version }}" | tr -cd '[:alnum:]')
           clean_py_version=$(echo "${{ matrix.python-version }}" | tr -cd '[:alnum:]')
-          name="py${clean_py_version}-dj${clean_dj_version}-es${es_version%%.*}"
+          name="py${clean_py_version}-dj${clean_dj_version}
           echo "out=${name}" >> $GITHUB_OUTPUT
       - name: Run test
         run: tox -v
