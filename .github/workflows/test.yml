@@ -88,6 +88,6 @@ jobs:
           name="py${clean_py_version}-dj${clean_dj_version}"
           echo "out=${name}" >> $GITHUB_OUTPUT
       - name: Run test
-        run: tox -v -f es7,es8,es9
+        run: tox -v
         env:
-          TOXENV: ${{ steps.format-tox.outputs.out }}
+          TOXENV: ${{ steps.format-tox.outputs.out }}-es7,${{ steps.format-tox.outputs.out }}-es8,${{ steps.format-tox.outputs.out }}-es9
