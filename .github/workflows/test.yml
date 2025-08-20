@@ -22,7 +22,7 @@ jobs:
       matrix: # https://docs.djangoproject.com/en/stable/faq/install/#what-python-version-can-i-use-with-django
         django-version: ["4.2", "5.1", "5.2"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        elastic-version: ["7.17.12"]
+        elastic-version: ["7.17.12", "8.19.2", "9.1.2"]
         exclude:
           - django-version: "4.2"
             python-version: "3.13"
