@@ -4,21 +4,18 @@ import unittest
 from django.conf import settings
 
 from haystack.utils import log as logging
+from haystack.compat import HAS_ES7
 
 
 def load_tests(loader, standard_tests, pattern):
     log = logging.getLogger("haystack")
-    try:
-        import elasticsearch
-
-        if not ((7, 0, 0) <= elasticsearch.__version__ < (8, 0, 0)):
-            raise ImportError
-        from elasticsearch import Elasticsearch, exceptions
-    except ImportError:
+    if not HAS_ES7:
         log.error(
             "Skipping ElasticSearch 7 tests: 'elasticsearch>=7.0.0,<8.0.0' not installed."
         )
         raise unittest.SkipTest("'elasticsearch>=7.0.0,<8.0.0' not installed.")
+
+    from elasticsearch import Elasticsearch, exceptions
 
     url = settings.HAYSTACK_CONNECTIONS["elasticsearch"]["URL"]
     es = Elasticsearch(url)

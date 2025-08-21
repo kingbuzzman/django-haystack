@@ -94,7 +94,7 @@ HAYSTACK_CONNECTIONS = {
 if "elasticsearch" in HAYSTACK_CONNECTIONS:
     from haystack.compat import HAS_ES7
 
-    if HAS_ES7
+    if HAS_ES7:
         HAYSTACK_CONNECTIONS["elasticsearch"].update(
             {
                 "ENGINE": "haystack.backends.elasticsearch7_backend.Elasticsearch7SearchEngine"
