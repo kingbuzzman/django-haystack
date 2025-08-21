@@ -1,9 +1,9 @@
-from importlib.metadata import version
+from importlib.metadata import version, PackageNotFoundError
 from packaging.version import Version
 
 try:
     elasticsearch_version = Version(version('elasticsearch'))
-except importlib.metadata.PackageNotFoundError:
+except PackageNotFoundError:
     elasticsearch_version = Version("0")
 
 HAS_ES7 = Version("7") > elasticsearch_version < Version("8")
