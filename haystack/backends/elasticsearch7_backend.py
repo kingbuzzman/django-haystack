@@ -1,18 +1,9 @@
-import datetime
-import warnings
-
-from django.conf import settings
-
-import haystack
-from haystack.backends import BaseEngine
 from haystack.backends.elasticsearch_backend import (
     ElasticsearchSearchBackend,
     ElasticsearchSearchQuery,
     ElasticsearchSearchEngine,
 )
-from haystack.constants import DEFAULT_OPERATOR, DJANGO_CT, DJANGO_ID, FUZZINESS
 from haystack.exceptions import MissingDependency
-from haystack.utils import get_identifier, get_model_ct
 from haystack.compat import HAS_ES7
 
 try:
