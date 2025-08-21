@@ -6,19 +6,12 @@ from haystack.backends.elasticsearch_backend import (
 from haystack.exceptions import MissingDependency
 from haystack.compat import HAS_ES7
 
-try:
-    if not HAS_ES7:
-        raise ImportError
-
-    import elasticsearch
-    from elasticsearch.helpers import bulk, scan
-except ImportError:
+if not HAS_ES7:
     raise MissingDependency(
         "The 'elasticsearch7' backend requires the \
                             installation of 'elasticsearch>=7.0.0,<8.0.0'. \
                             Please refer to the documentation."
     )
-
 
 Elasticsearch7SearchBackend = ElasticsearchSearchBackend
 Elasticsearch7SearchQuery = ElasticsearchSearchQuery

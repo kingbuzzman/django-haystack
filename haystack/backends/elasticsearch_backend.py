@@ -8,12 +8,10 @@ from django.core.exceptions import ImproperlyConfigured
 import haystack
 from haystack.backends import BaseEngine, BaseSearchBackend, BaseSearchQuery, log_query
 from haystack.constants import (
-    ALL_FIELD,
     DEFAULT_OPERATOR,
     DJANGO_CT,
     DJANGO_ID,
-    FUZZY_MAX_EXPANSIONS,
-    FUZZY_MIN_SIM,
+    FUZZINESS,
     ID,
 )
 from haystack.exceptions import MissingDependency, MoreLikeThisError, SkipDocument
@@ -25,7 +23,7 @@ from haystack.utils.app_loading import haystack_get_model
 
 try:
     import elasticsearch
-    from elasticsearch.helpers import bulk
+    from elasticsearch.helpers import bulk, scan
     from elasticsearch.exceptions import NotFoundError
 except ImportError:
     raise MissingDependency(
@@ -541,108 +539,6 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             }
         }
 
-    def more_like_this(
-        self,
-        model_instance,
-        additional_query_string=None,
-        start_offset=0,
-        end_offset=None,
-        models=None,
-        limit_to_registered_models=None,
-        result_class=None,
-        **kwargs
-    ):
-        from haystack import connections
-
-        if not self.setup_complete:
-            self.setup()
-
-        # Deferred models will have a different class ("RealClass_Deferred_fieldname")
-        # which won't be in our registry:
-        model_klass = model_instance._meta.concrete_model
-
-        index = (
-            connections[self.connection_alias]
-            .get_unified_index()
-            .get_index(model_klass)
-        )
-        field_name = index.get_content_field()
-        params = {}
-
-        if start_offset is not None:
-            params["from_"] = start_offset
-
-        if end_offset is not None:
-            params["size"] = end_offset - start_offset
-
-        doc_id = get_identifier(model_instance)
-
-        try:
-            # More like this Query
-            # https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-mlt-query.html
-            mlt_query = {
-                "query": {
-                    "more_like_this": {
-                        "fields": [field_name],
-                        "like": [
-                            {
-                                "_index": self.index_name,
-                                "_id": doc_id,
-                            },
-                        ],
-                    }
-                }
-            }
-
-            narrow_queries = []
-
-            if additional_query_string and additional_query_string != "*:*":
-                additional_filter = {"query_string": {"query": additional_query_string}}
-                narrow_queries.append(additional_filter)
-
-            if limit_to_registered_models is None:
-                limit_to_registered_models = getattr(
-                    settings, "HAYSTACK_LIMIT_TO_REGISTERED_MODELS", True
-                )
-
-            if models and len(models):
-                model_choices = sorted(get_model_ct(model) for model in models)
-            elif limit_to_registered_models:
-                # Using narrow queries, limit the results to only models handled
-                # with the current routers.
-                model_choices = self.build_models_list()
-            else:
-                model_choices = []
-
-            if len(model_choices) > 0:
-                model_filter = {"terms": {DJANGO_CT: model_choices}}
-                narrow_queries.append(model_filter)
-
-            if len(narrow_queries) > 0:
-                mlt_query = {
-                    "query": {
-                        "bool": {
-                            "must": mlt_query["query"],
-                            "filter": {"bool": {"must": list(narrow_queries)}},
-                        }
-                    }
-                }
-
-            raw_results = self.conn.search(
-                body=mlt_query, index=self.index_name, _source=True, **params
-            )
-        except elasticsearch.TransportError:
-            if not self.silently_fail:
-                raise
-
-            self.log.exception(
-                "Failed to fetch More Like This from Elasticsearch for document '%s'",
-                doc_id,
-            )
-            raw_results = {}
-
-        return self._process_results(raw_results, result_class=result_class)
-
     def _process_results(
         self,
         raw_results,
@@ -764,19 +660,66 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
         params = {}
 
         if start_offset is not None:
-            params["search_from"] = start_offset
+            params["from_"] = start_offset
 
         if end_offset is not None:
-            params["search_size"] = end_offset - start_offset
+            params["size"] = end_offset - start_offset
 
         doc_id = get_identifier(model_instance)
 
         try:
-            raw_results = self.conn.mlt(
-                index=self.index_name,
-                id=doc_id,
-                mlt_fields=[field_name],
-                **params,
+            # More like this Query
+            # https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-mlt-query.html
+            mlt_query = {
+                "query": {
+                    "more_like_this": {
+                        "fields": [field_name],
+                        "like": [
+                            {
+                                "_index": self.index_name,
+                                "_id": doc_id,
+                            },
+                        ],
+                    }
+                }
+            }
+
+            narrow_queries = []
+
+            if additional_query_string and additional_query_string != "*:*":
+                additional_filter = {"query_string": {"query": additional_query_string}}
+                narrow_queries.append(additional_filter)
+
+            if limit_to_registered_models is None:
+                limit_to_registered_models = getattr(
+                    settings, "HAYSTACK_LIMIT_TO_REGISTERED_MODELS", True
+                )
+
+            if models and len(models):
+                model_choices = sorted(get_model_ct(model) for model in models)
+            elif limit_to_registered_models:
+                # Using narrow queries, limit the results to only models handled
+                # with the current routers.
+                model_choices = self.build_models_list()
+            else:
+                model_choices = []
+
+            if len(model_choices) > 0:
+                model_filter = {"terms": {DJANGO_CT: model_choices}}
+                narrow_queries.append(model_filter)
+
+            if len(narrow_queries) > 0:
+                mlt_query = {
+                    "query": {
+                        "bool": {
+                            "must": mlt_query["query"],
+                            "filter": {"bool": {"must": list(narrow_queries)}},
+                        }
+                    }
+                }
+
+            raw_results = self.conn.search(
+                body=mlt_query, index=self.index_name, _source=True, **params
             )
         except elasticsearch.TransportError:
             if not self.silently_fail:
