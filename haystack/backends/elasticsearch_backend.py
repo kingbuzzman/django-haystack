@@ -104,6 +104,31 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
         },
     }
 
+    # DRL_FIXME: Perhaps move to something where, if none of these
+    #            match, call a custom method on the form that returns, per-backend,
+    #            the right type of storage?
+    DEFAULT_FIELD_MAPPING = {
+        "type": "text",
+        "analyzer": "snowball",
+    }
+    FIELD_MAPPINGS = {
+        "edge_ngram": {
+            "type": "text",
+            "analyzer": "edgengram_analyzer",
+        },
+        "ngram": {
+            "type": "text",
+            "analyzer": "ngram_analyzer",
+        },
+        "date": {"type": "date"},
+        "datetime": {"type": "date"},
+        "location": {"type": "geo_point"},
+        "boolean": {"type": "boolean"},
+        "float": {"type": "float"},
+        "long": {"type": "long"},
+        "integer": {"type": "long"},
+    }
+
     def __init__(self, connection_alias, **connection_options):
         super().__init__(connection_alias, **connection_options)
 
@@ -953,32 +978,6 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             pass
 
         return value
-
-
-# DRL_FIXME: Perhaps move to something where, if none of these
-#            match, call a custom method on the form that returns, per-backend,
-#            the right type of storage?
-DEFAULT_FIELD_MAPPING = {
-    "type": "text",
-    "analyzer": "snowball",
-}
-FIELD_MAPPINGS = {
-    "edge_ngram": {
-        "type": "text",
-        "analyzer": "edgengram_analyzer",
-    },
-    "ngram": {
-        "type": "text",
-        "analyzer": "ngram_analyzer",
-    },
-    "date": {"type": "date"},
-    "datetime": {"type": "date"},
-    "location": {"type": "geo_point"},
-    "boolean": {"type": "boolean"},
-    "float": {"type": "float"},
-    "long": {"type": "long"},
-    "integer": {"type": "long"},
-}
 
 
 # Sucks that this is almost an exact copy of what's in the Solr backend,
