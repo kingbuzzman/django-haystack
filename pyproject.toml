@@ -36,6 +36,7 @@ dynamic = [
 ]
 dependencies = [
   "Django>=4.2",
+  "importlib",
   "packaging",
 ]
 [project.optional-dependencies]
