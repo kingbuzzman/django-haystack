@@ -22,7 +22,7 @@ jobs:
       matrix: # https://docs.djangoproject.com/en/stable/faq/install/#what-python-version-can-i-use-with-django
         django-version: ["4.2", "5.1", "5.2"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        elastic-version: ["7.17.12"]
+        elastic-version: [7]
         exclude:
           - django-version: "4.2"
             python-version: "3.13"
@@ -30,18 +30,33 @@ jobs:
             python-version: "3.9"
           - django-version: "5.2"
             python-version: "3.9"
+        include:
+          - elastic-version: 7
+            es_image: docker.elastic.co/elasticsearch/elasticsearch:7.17.28
+            es_security: ""
+            es_java_opts: ""
+          - elastic-version: 8
+            es_image: docker.elastic.co/elasticsearch/elasticsearch:8.19.2
+            es_security: "false"
+            es_java_opts: "-Xms512m -Xmx512m"
+          - elastic-version: 9
+            es_image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
+            es_security: "false"
+            es_java_opts: "-Xms512m -Xmx512m"
     services:
       elastic:
-        image: elasticsearch:${{ matrix.elastic-version }}
+        image: ${{ matrix.es_image }}
+        ports:
+          - 9200:9200
         env:
           discovery.type: "single-node"
+          xpack.security.enabled: ${{ matrix.es_security }}
+          ES_JAVA_OPTS: ${{ matrix.es_java_opts }}
         options: >-
-          --health-cmd "curl http://localhost:9200/_cluster/health"
+          --health-cmd "curl -sf http://localhost:9200/_cluster/health | grep -q 'status'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
-        ports:
-          - 9200:9200
       solr:
         image: solr:6
         ports:
@@ -52,19 +67,27 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      # - name: Install system dependencies
+      #   run: |
+      #     sudo apt update
+      #     sudo apt install --no-install-recommends -y gdal-bin
       - name: Install system dependencies
-        run: |
-          sudo apt update
-          sudo apt install --no-install-recommends -y gdal-bin
+        uses: daaku/gh-action-apt-install@v4
+        with:
+          packages: gdal-bin
       - name: Setup solr test server in Docker
         run: bash test_haystack/solr_tests/server/setup-solr-test-server-in-docker.sh
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install coverage requests tox tox-gh-actions
-          pip install django==${{ matrix.django-version }} elasticsearch==${{ matrix.elastic-version }}
-          pip install --editable .
+          python -m pip install --upgrade pip tox tox-gh-actions
+      - name: Format TOXENV
+        id: format-tox
+        run: |
+          clean_dj_version=$(echo "${{ matrix.django-version }}" | tr -cd '[:alnum:]')
+          clean_py_version=$(echo "${{ matrix.python-version }}" | tr -cd '[:alnum:]')
+          name="py${clean_py_version}-dj${clean_dj_version}"
+          echo "out=${name}" >> $GITHUB_OUTPUT
       - name: Run test
         run: tox -v
         env:
-          DJANGO: ${{ matrix.django-version }}
+          TOXENV: ${{ steps.format-tox.outputs.out }}-es${{ matrix.elastic-version }}
