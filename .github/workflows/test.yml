@@ -22,6 +22,7 @@ jobs:
       matrix: # https://docs.djangoproject.com/en/stable/faq/install/#what-python-version-can-i-use-with-django
         django-version: ["4.2", "5.1", "5.2"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        elastic-version: [7, 8, 9]
         exclude:
           - django-version: "4.2"
             python-version: "3.13"
@@ -32,6 +33,7 @@ jobs:
     services:
       elastic7:
         image: elasticsearch:7.17.28
+        if: matrix.elastic-version == 7
         env:
           discovery.type: "single-node"
         options: >-
@@ -41,6 +43,7 @@ jobs:
           --health-retries 10
       elastic8:
         image: elasticsearch:8.19.2
+        if: matrix.elastic-version == 8
         env:
           discovery.type: "single-node"
           xpack.security.enabled: "false"
@@ -52,6 +55,7 @@ jobs:
           --health-retries 10
       elastic9:
         image: elasticsearch:9.1.2
+        if: matrix.elastic-version == 9
         env:
           discovery.type: "single-node"
           xpack.security.enabled: "false"
@@ -90,4 +94,4 @@ jobs:
       - name: Run test
         run: tox -v
         env:
-          TOXENV: ${{ steps.format-tox.outputs.out }}-es7,${{ steps.format-tox.outputs.out }}-es8,${{ steps.format-tox.outputs.out }}-es9
+          TOXENV: ${{ steps.format-tox.outputs.out }}-es${{ matrix.elastic-version }}
